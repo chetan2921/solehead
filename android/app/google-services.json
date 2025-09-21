@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "620918852537",
+    "project_id": "soulheads",
+    "storage_bucket": "soulheads.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:620918852537:android:211c94b3c21f1e31018468",
+        "android_client_info": {
+          "package_name": "com.example.solehead"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "620918852537-p4gn9tmqg8rre2cvjjd5906snnrvf9j4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8WTfxNtEHSHX7YxgyXL4RgJCuVKOQ1NQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "620918852537-p4gn9tmqg8rre2cvjjd5906snnrvf9j4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
