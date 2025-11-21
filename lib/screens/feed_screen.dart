@@ -19,22 +19,22 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   late AnimationController _fabAnimationController;
-  late AnimationController _appBarAnimationController;
+  late TabController _tabController;
   late Animation<double> _fabAnimation;
   bool _showFab = true;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize TabController first
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
     _scrollController.addListener(_onScroll);
 
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _appBarAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
 
@@ -43,13 +43,28 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     );
 
     _fabAnimationController.forward();
+
+    // Load initial posts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PostProvider>().loadPosts(refresh: true);
+    });
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 1) {
+      // Following tab
+      context.read<PostProvider>().loadFollowingPosts(refresh: true);
+    } else {
+      // All tab
+      context.read<PostProvider>().loadPosts(refresh: true);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _scrollController.dispose();
     _fabAnimationController.dispose();
-    _appBarAnimationController.dispose();
     super.dispose();
   }
 
@@ -57,7 +72,11 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     // Infinite scroll logic
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.8) {
-      context.read<PostProvider>().loadPosts();
+      if (_tabController.index == 0) {
+        context.read<PostProvider>().loadPosts();
+      } else {
+        context.read<PostProvider>().loadFollowingPosts();
+      }
     }
 
     // FAB animation logic
@@ -77,32 +96,99 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _onRefresh() async {
-    await context.read<PostProvider>().loadPosts(refresh: true);
+    if (_tabController.index == 0) {
+      await context.read<PostProvider>().loadPosts(refresh: true);
+    } else {
+      await context.read<PostProvider>().loadFollowingPosts(refresh: true);
+    }
+  }
+
+  Widget _buildAllPostsTab() {
+    return Consumer<PostProvider>(
+      builder: (context, postProvider, child) {
+        if (postProvider.posts.isEmpty && postProvider.isLoading) {
+          return _buildLoadingState();
+        }
+
+        if (postProvider.posts.isEmpty && postProvider.error != null) {
+          return _buildErrorState(postProvider);
+        }
+
+        if (postProvider.posts.isEmpty) {
+          return _buildEmptyState(
+            'No posts yet!',
+            'Be the first to share your fire sneakers 🔥',
+          );
+        }
+
+        return _buildFeedContent(postProvider.posts, false);
+      },
+    );
+  }
+
+  Widget _buildFollowingPostsTab() {
+    return Consumer<PostProvider>(
+      builder: (context, postProvider, child) {
+        if (postProvider.followingPosts.isEmpty && postProvider.isLoading) {
+          return _buildLoadingState();
+        }
+
+        if (postProvider.followingPosts.isEmpty && postProvider.error != null) {
+          return _buildErrorState(postProvider);
+        }
+
+        if (postProvider.followingPosts.isEmpty) {
+          return _buildEmptyState(
+            'No posts from following!',
+            'Follow some users to see their posts here',
+          );
+        }
+
+        return _buildFeedContent(postProvider.followingPosts, true);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: _buildModernAppBar(context),
-      body: ResponsiveContainer(
-        child: Consumer<PostProvider>(
-          builder: (context, postProvider, child) {
-            if (postProvider.posts.isEmpty && postProvider.isLoading) {
-              return _buildLoadingState();
-            }
-
-            if (postProvider.posts.isEmpty && postProvider.error != null) {
-              return _buildErrorState(postProvider);
-            }
-
-            if (postProvider.posts.isEmpty) {
-              return _buildEmptyState();
-            }
-
-            return _buildFeedContent(postProvider);
-          },
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SliverTabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF00F5FF),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: const Color(0xFF00F5FF),
+                  indicatorWeight: 2,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  indicatorSize: TabBarIndicatorSize.label,
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.grid_on, size: 18),
+                      text: 'All',
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                    ),
+                    Tab(
+                      icon: Icon(Icons.people_outline, size: 18),
+                      text: 'Following',
+                      iconMargin: EdgeInsets.only(bottom: 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [_buildAllPostsTab(), _buildFollowingPostsTab()],
         ),
       ),
       floatingActionButton: ScaleTransition(
@@ -140,7 +226,7 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     return AppBar(
       backgroundColor: const Color(0xFF0A0A0A).withOpacity(0.8),
       elevation: 0,
-      toolbarHeight: 60,
+      toolbarHeight: 30,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -334,7 +420,10 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState([
+    String title = 'No kicks yet!',
+    String subtitle = 'Be the first to share your fire sneakers 🔥',
+  ]) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -343,24 +432,24 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
           colors: [Color(0xFF0A0A0A), Color(0xFF1A1A1A)],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('👟', style: TextStyle(fontSize: 80)),
-            SizedBox(height: 24),
+            const Text('👟', style: TextStyle(fontSize: 80)),
+            const SizedBox(height: 24),
             Text(
-              'No kicks yet!',
-              style: TextStyle(
+              title,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Be the first to share your fire sneakers 🔥',
-              style: TextStyle(
+              subtitle,
+              style: const TextStyle(
                 color: Colors.white60,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -373,7 +462,7 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFeedContent(PostProvider postProvider) {
+  Widget _buildFeedContent(List<PostModel> posts, bool isFollowingTab) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -386,25 +475,25 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
         onRefresh: _onRefresh,
         backgroundColor: const Color(0xFF1A1A1A),
         color: const Color(0xFF00F5FF),
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.only(
-            top: 75,
-            bottom: 75,
-          ), // Adjusted for 65px nav
-          itemCount:
-              postProvider.posts.length + (postProvider.isLoading ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= postProvider.posts.length) {
-              return Container(
-                padding: const EdgeInsets.all(32),
-                child: const Center(child: InkDropLoader(size: 40)),
-              );
-            }
+        child: Consumer<PostProvider>(
+          builder: (context, postProvider, _) {
+            return ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.only(top: 8, bottom: 75),
+              itemCount: posts.length + (postProvider.isLoading ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= posts.length) {
+                  return Container(
+                    padding: const EdgeInsets.all(32),
+                    child: const Center(child: InkDropLoader(size: 40)),
+                  );
+                }
 
-            return AnimatedContainer(
-              duration: Duration(milliseconds: 200 + (index * 50)),
-              child: PostCard(post: postProvider.posts[index], index: index),
+                return AnimatedContainer(
+                  duration: Duration(milliseconds: 200 + (index * 50)),
+                  child: PostCard(post: posts[index], index: index),
+                );
+              },
             );
           },
         ),
@@ -426,9 +515,13 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   late AnimationController _likeAnimationController;
   late AnimationController _cardAnimationController;
+  late AnimationController _heartAnimationController;
   late Animation<double> _likeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _heartScaleAnimation;
+  late Animation<double> _heartOpacityAnimation;
   bool _isLiked = false;
+  bool _showHeartOverlay = false;
 
   @override
   void initState() {
@@ -441,6 +534,11 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
     _cardAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _heartAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
@@ -458,6 +556,20 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       ),
     );
 
+    _heartScaleAnimation = Tween<double>(begin: 0.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _heartAnimationController,
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
+
+    _heartOpacityAnimation = Tween<double>(begin: 0.8, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _heartAnimationController,
+        curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
+      ),
+    );
+
     // Stagger animation based on index
     Future.delayed(Duration(milliseconds: widget.index * 100), () {
       if (mounted) {
@@ -470,6 +582,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
   void dispose() {
     _likeAnimationController.dispose();
     _cardAnimationController.dispose();
+    _heartAnimationController.dispose();
     super.dispose();
   }
 
@@ -482,6 +595,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         tabletPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: GestureDetector(
           onTap: () => _navigateToPostDetail(context),
+          onDoubleTap: () => _handleDoubleTap(),
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A).withOpacity(0.8),
@@ -502,7 +616,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildUserHeader(),
-                _buildPostImage(),
+                _buildPostImageWithHeartOverlay(),
                 _buildSimplifiedContent(),
                 _buildSimplifiedActionButtons(),
               ],
@@ -511,6 +625,62 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  void _handleDoubleTap() {
+    if (!mounted) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final currentUser = authProvider.user;
+
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please log in to like posts'),
+          backgroundColor: const Color(0xFF1A1A1A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Only like if not already liked
+    if (!widget.post.isLikedBy(currentUser.id)) {
+      if (mounted) {
+        setState(() {
+          _showHeartOverlay = true;
+          _isLiked = true;
+        });
+      }
+
+      _heartAnimationController.forward(from: 0).then((_) {
+        if (mounted) {
+          setState(() {
+            _showHeartOverlay = false;
+          });
+        }
+      });
+
+      context.read<PostProvider>().toggleLike(widget.post.id);
+    } else {
+      // Show heart animation even if already liked
+      if (mounted) {
+        setState(() {
+          _showHeartOverlay = true;
+        });
+      }
+
+      _heartAnimationController.forward(from: 0).then((_) {
+        if (mounted) {
+          setState(() {
+            _showHeartOverlay = false;
+          });
+        }
+      });
+    }
   }
 
   void _navigateToPostDetail(BuildContext context) {
@@ -647,7 +817,7 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPostImage() {
+  Widget _buildPostImageWithHeartOverlay() {
     if (widget.post.mainImage.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -666,9 +836,73 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
           aspectRatio: 0.85,
-          child: widgets.CachedImageWidget(
-            imageUrl: widget.post.mainImage,
-            fit: BoxFit.cover,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              widgets.CachedImageWidget(
+                imageUrl: widget.post.mainImage,
+                fit: BoxFit.cover,
+              ),
+              if (_showHeartOverlay)
+                Center(
+                  child: AnimatedBuilder(
+                    animation: _heartAnimationController,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _heartScaleAnimation.value,
+                        child: Opacity(
+                          opacity: _heartOpacityAnimation.value,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Outer glow ring
+                              Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      const Color(0xFF00F5FF).withOpacity(0.3),
+                                      const Color(0xFF00F5FF).withOpacity(0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Heart icon with particles effect
+                              ShaderMask(
+                                shaderCallback: (bounds) => RadialGradient(
+                                  colors: [
+                                    const Color(0xFF00F5FF),
+                                    const Color(0xFF0080FF),
+                                  ],
+                                ).createShader(bounds),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: Colors.white,
+                                  size: 100,
+                                  shadows: [
+                                    Shadow(
+                                      color: const Color(
+                                        0xFF00F5FF,
+                                      ).withOpacity(0.8),
+                                      blurRadius: 20,
+                                    ),
+                                    Shadow(
+                                      color: Colors.white.withOpacity(0.6),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -973,5 +1207,47 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     } else {
       return 'Just now';
     }
+  }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _SliverTabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => 48.0; // Thinner height
+
+  @override
+  double get maxExtent => 48.0; // Thinner height
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      height: 48.0,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0A),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
   }
 }

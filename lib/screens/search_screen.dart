@@ -291,7 +291,9 @@ class _SearchScreenState extends State<SearchScreen>
         slivers: [
           // Add spacing for the AppBar
           SliverToBoxAdapter(
-            child: SizedBox(height: 130), // Match AppBar toolbarHeight
+            child: SizedBox(
+              height: 162,
+            ), // Match AppBar toolbarHeight + padding
           ),
 
           SliverPersistentHeader(
@@ -299,16 +301,29 @@ class _SearchScreenState extends State<SearchScreen>
             delegate: _SliverTabBarDelegate(
               TabBar(
                 controller: _tabController,
-                labelColor: const Color.fromARGB(255, 255, 255, 255),
+                labelColor: const Color(0xFF00F5FF),
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: const Color.fromARGB(255, 255, 255, 255),
-                indicatorWeight: 1,
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
                 tabs: const [
                   Tab(
-                    icon: Icon(Icons.sports_baseball_outlined),
+                    icon: Icon(Icons.sports_baseball_outlined, size: 20),
                     text: 'Sneakers',
+                    height: 48,
                   ),
-                  Tab(icon: Icon(Icons.people_outline), text: 'Users'),
+                  Tab(
+                    icon: Icon(Icons.people_outline, size: 20),
+                    text: 'Users',
+                    height: 48,
+                  ),
                 ],
               ),
             ),

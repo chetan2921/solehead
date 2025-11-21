@@ -351,9 +351,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                     unselectedLabelColor: Colors.grey,
                     indicatorColor: const Color.fromARGB(255, 255, 255, 255),
                     indicatorWeight: 3,
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                     tabs: const [
-                      Tab(icon: Icon(Icons.grid_on), text: 'Posts'),
-                      Tab(icon: Icon(Icons.favorite_outline), text: 'Liked'),
+                      Tab(
+                        icon: Icon(Icons.grid_on, size: 20),
+                        text: 'Posts',
+                        height: 48,
+                      ),
+                      Tab(
+                        icon: Icon(Icons.favorite_outline, size: 20),
+                        text: 'Liked',
+                        height: 48,
+                      ),
                     ],
                   ),
                 ),

@@ -346,7 +346,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 50), // Account for app bar
+                    const SizedBox(
+                      height: 100,
+                    ), // Increased from 50 for proper spacing
                     _buildPostHeader(post),
                     _buildPostImages(post),
                     // _buildPostActions(post),
@@ -778,7 +780,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 100,
+              width: 150,
               padding: const EdgeInsets.only(
                 left: 12,
                 right: 12,
@@ -786,7 +788,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 bottom: 6,
               ),
               decoration: BoxDecoration(
-                color: const Color(0xFF2A2A2A).withOpacity(0.5),
+                color: const Color(0xFF2A2A2A).withOpacity(0),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -809,7 +811,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                   ),
                   children: [
                     TextSpan(
-                      text: '${post.user?.username ?? 'User'}: ',
+                      text: 'Description:   ',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF00F5FF),
@@ -911,9 +913,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 45,
+            width: 50,
             child: Text(
-              '$label:',
+              '$label : ',
               style: const TextStyle(
                 color: Color(0xFF00F5FF),
                 fontSize: 14,

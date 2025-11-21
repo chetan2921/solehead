@@ -14,6 +14,7 @@ import 'screens/post_detail_screen.dart';
 import 'screens/user_profile_screen.dart';
 import 'screens/followers_screen.dart';
 import 'screens/following_screen.dart';
+import 'screens/sneaker_detail_screen.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -63,6 +64,12 @@ class MyApp extends StatelessWidget {
               final postId = settings.arguments as String;
               return MaterialPageRoute(
                 builder: (_) => PostDetailScreen(postId: postId),
+              );
+            case '/sneaker-detail':
+              final args = settings.arguments as Map<String, dynamic>;
+              return MaterialPageRoute(
+                builder: (_) => const SneakerDetailScreen(),
+                settings: RouteSettings(arguments: args),
               );
             case '/user-profile':
               final args = settings.arguments as Map<String, dynamic>;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/sneaker_provider.dart';
 import '../widgets/responsive_widgets.dart';
-import 'brand_sneakers_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -16,6 +15,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   final PageController _pageController = PageController();
   late AnimationController _animationController;
   int _currentPageIndex = 0;
+  String? _selectedBrand; // null means show all brands
 
   // Featured sneakers for the top carousel (new/upcoming releases)
   final List<Map<String, dynamic>> _featuredSneakers = [
@@ -57,55 +57,62 @@ class _ExploreScreenState extends State<ExploreScreen>
     },
   ];
 
-  // Popular sneaker brands with their icons
+  // Popular sneaker brands with their sample sneakers
   final List<Map<String, dynamic>> _brands = [
     {
       'name': 'Nike',
       'icon': '✓',
+      'logo': 'assets/images/Nike/Nike_Logo_1.png',
       'color': Color(0xFFFF6B35),
       'description': 'Just Do It',
+      'sneakers': [
+        {'name': 'Air Jordan 1 High', 'image': '👟', 'price': '\$170'},
+        {'name': 'Air Max 90', 'image': '👟', 'price': '\$130'},
+        {'name': 'Dunk Low', 'image': '👟', 'price': '\$110'},
+        {'name': 'Air Force 1', 'image': '👟', 'price': '\$90'},
+        {'name': 'Blazer Mid', 'image': '👟', 'price': '\$100'},
+        {'name': 'Air Max 97', 'image': '👟', 'price': '\$175'},
+      ],
     },
     {
       'name': 'Adidas',
       'icon': '△',
+      'logo': 'assets/images/Adidas/Adidas_Logo_1.png',
       'color': Color(0xFF000000),
       'description': 'Three Stripes',
-    },
-    {
-      'name': 'Puma',
-      'icon': '🐾',
-      'color': Color(0xFF000000),
-      'description': 'Forever Faster',
+      'sneakers': [
+        {'name': 'Yeezy Boost 350', 'image': '👟', 'price': '\$220'},
+        {'name': 'Stan Smith', 'image': '👟', 'price': '\$85'},
+        {'name': 'Superstar', 'image': '👟', 'price': '\$80'},
+        {'name': 'Ultraboost', 'image': '👟', 'price': '\$180'},
+        {'name': 'Forum Low', 'image': '👟', 'price': '\$110'},
+      ],
     },
     {
       'name': 'New Balance',
       'icon': 'N',
+      'logo': 'assets/images/New Balance/New Balance_idKm94UNbI_1.png',
       'color': Color(0xFF1B5E20),
       'description': 'Fearlessly Independent',
+      'sneakers': [
+        {'name': '550', 'image': '👟', 'price': '\$110'},
+        {'name': '990v5', 'image': '👟', 'price': '\$185'},
+        {'name': '327', 'image': '👟', 'price': '\$90'},
+        {'name': '2002R', 'image': '👟', 'price': '\$150'},
+      ],
     },
     {
       'name': 'Converse',
       'icon': '★',
-      'color': Color(0xFF000000),
+      'logo': 'assets/images/Converse/Converse_idJct6otBl_1.png',
+      'color': Color.fromARGB(255, 163, 148, 148),
       'description': 'All Star',
-    },
-    {
-      'name': 'Vans',
-      'icon': 'V',
-      'color': Color(0xFF000000),
-      'description': 'Off The Wall',
-    },
-    {
-      'name': 'Reebok',
-      'icon': 'R',
-      'color': Color(0xFF000000),
-      'description': 'Be More Human',
-    },
-    {
-      'name': 'ASICS',
-      'icon': 'A',
-      'color': Color(0xFF0066CC),
-      'description': 'Sound Mind, Sound Body',
+      'sneakers': [
+        {'name': 'Chuck 70 High', 'image': '👟', 'price': '\$85'},
+        {'name': 'Chuck Taylor Low', 'image': '👟', 'price': '\$55'},
+        {'name': 'One Star', 'image': '👟', 'price': '\$75'},
+        {'name': 'Run Star Hike', 'image': '👟', 'price': '\$110'},
+      ],
     },
   ];
 
@@ -159,25 +166,24 @@ class _ExploreScreenState extends State<ExploreScreen>
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(),
       body: ResponsiveContainer(
-        child: Column(
+        child: ListView(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 80,
+            bottom: 75, // For floating nav
+          ),
           children: [
-            // Top padding for extended app bar
-            SizedBox(height: MediaQuery.of(context).padding.top + 80),
-
             // Featured sneakers carousel
             _buildFeaturedCarousel(),
 
             const SizedBox(height: 24),
 
-            // Brands section with bottom padding for floating nav
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 75,
-                ), // Adjusted for 65px nav
-                child: _buildBrandsSection(),
-              ),
-            ),
+            // Brand filter chips
+            _buildBrandFilter(),
+
+            const SizedBox(height: 16),
+
+            // Continuous Pinterest-style grid
+            _buildContinuousGrid(),
           ],
         ),
       ),
@@ -429,64 +435,186 @@ class _ExploreScreenState extends State<ExploreScreen>
     );
   }
 
-  Widget _buildBrandsSection() {
+  Widget _buildBrandFilter() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
         children: [
-          // Section header
-          Row(
-            children: [
-              const Text('👟 ', style: TextStyle(fontSize: 20)),
-              const Text(
-                'Browse by Brand',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+          // All brands chip
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: const Text('All'),
+              selected: _selectedBrand == null,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedBrand = null;
+                });
+              },
+              backgroundColor: const Color(0xFF1A1A1A),
+              selectedColor: const Color(0xFF00F5FF),
+              labelStyle: TextStyle(
+                color: _selectedBrand == null ? Colors.black : Colors.white,
+                fontWeight: FontWeight.w600,
               ),
-              const Spacer(),
-              Text(
-                'Tap to explore',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 12,
-                ),
+              side: BorderSide(
+                color: _selectedBrand == null
+                    ? const Color(0xFF00F5FF)
+                    : Colors.white.withOpacity(0.1),
+                width: 1,
               ),
-            ],
-          ),
-
-          const SizedBox(height: 0),
-
-          // Brands grid
-          Expanded(
-            child: ResponsiveColumns(
-              mobileColumns: 2,
-              tabletColumns: 3,
-              desktopColumns: 4,
-              children: _brands
-                  .asMap()
-                  .entries
-                  .map(
-                    (entry) => AnimatedContainer(
-                      duration: Duration(milliseconds: 300 + (entry.key * 100)),
-                      curve: Curves.easeOutCubic,
-                      child: _buildBrandCard(entry.value),
-                    ),
-                  )
-                  .toList(),
             ),
           ),
+          // Individual brand chips with logos
+          ..._brands.map((brand) {
+            final brandName = brand['name'] as String;
+            final brandLogo = brand['logo'] as String?;
+            final isSelected = _selectedBrand == brandName;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (brandLogo != null)
+                      ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          isSelected ? Colors.black : Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                        child: Image.asset(
+                          brandLogo,
+                          height: 24,
+                          width: 24,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text(
+                              brand['icon'],
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    if (brandLogo != null) const SizedBox(width: 8),
+                    Text(brandName),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedBrand = selected ? brandName : null;
+                  });
+                },
+                backgroundColor: const Color(0xFF1A1A1A),
+                selectedColor: const Color(0xFF00F5FF),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFF00F5FF)
+                      : Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildBrandCard(Map<String, dynamic> brand) {
+  Widget _buildContinuousGrid() {
+    // Flatten all sneakers from all brands
+    final allSneakers = <Map<String, dynamic>>[];
+    for (var brand in _brands) {
+      final sneakers =
+          (brand['sneakers'] as List<dynamic>?)
+              ?.map((e) => e as Map<String, dynamic>)
+              .toList() ??
+          [];
+
+      for (var sneaker in sneakers) {
+        allSneakers.add({...sneaker, 'brand': brand});
+      }
+    }
+
+    // Filter by selected brand if any
+    final filteredSneakers = _selectedBrand == null
+        ? allSneakers
+        : allSneakers
+              .where((s) => s['brand']['name'] == _selectedBrand)
+              .toList();
+
+    if (filteredSneakers.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(
+          child: Text(
+            'No sneakers found',
+            style: TextStyle(color: Colors.white54, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: _buildPinterestGrid(filteredSneakers),
+    );
+  }
+
+  Widget _buildPinterestGrid(List<Map<String, dynamic>> sneakers) {
+    // Split sneakers into two columns
+    final leftColumn = <Map<String, dynamic>>[];
+    final rightColumn = <Map<String, dynamic>>[];
+
+    for (int i = 0; i < sneakers.length; i++) {
+      if (i % 2 == 0) {
+        leftColumn.add(sneakers[i]);
+      } else {
+        rightColumn.add(sneakers[i]);
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column
+        Expanded(
+          child: Column(
+            children: leftColumn
+                .map((sneaker) => _buildSneakerImageCard(sneaker))
+                .toList(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Right column
+        Expanded(
+          child: Column(
+            children: rightColumn
+                .map((sneaker) => _buildSneakerImageCard(sneaker))
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSneakerImageCard(Map<String, dynamic> sneaker) {
+    // Random height variation for Pinterest effect
+    final heights = [180.0, 200.0, 160.0, 220.0, 190.0, 210.0, 170.0, 230.0];
+    final height = heights[sneaker.hashCode % heights.length];
+    final brand = sneaker['brand'] as Map<String, dynamic>;
+
     return Container(
-      margin: const EdgeInsets.all(6),
+      margin: const EdgeInsets.only(bottom: 12),
+      height: height,
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(16),
@@ -494,85 +622,42 @@ class _ExploreScreenState extends State<ExploreScreen>
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
+            blurRadius: 8,
             spreadRadius: 1,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToBrandSneakers(brand['name']),
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/sneaker-detail',
+              arguments: {'sneaker': sneaker, 'brand': brand},
+            );
+          },
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Brand icon
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: brand['color'].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: brand['color'].withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      brand['icon'],
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: brand['color'],
-                      ),
-                    ),
-                  ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [const Color(0xFF2A2A2A), const Color(0xFF1A1A1A)],
                 ),
-
-                const SizedBox(height: 12),
-
-                // Brand name
-                Text(
-                  brand['name'],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
+              ),
+              child: Center(
+                child: Text(
+                  sneaker['image'],
+                  style: const TextStyle(fontSize: 50),
                 ),
-
-                const SizedBox(height: 4),
-
-                // Brand description
-                Text(
-                  brand['description'],
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 11,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _navigateToBrandSneakers(String brandName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BrandSneakersScreen(brandName: brandName),
       ),
     );
   }

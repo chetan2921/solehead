@@ -223,7 +223,7 @@ class _CreatePostScreenState extends State<CreatePostScreen>
                   return Form(
                     key: _formKey,
                     child: ListView(
-                      padding: const EdgeInsets.only(top: 80),
+                      padding: const EdgeInsets.only(top: 100),
                       children: [
                         // _buildHeaderSection(),
                         // const SizedBox(height: 24),

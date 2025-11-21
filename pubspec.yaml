@@ -78,6 +78,11 @@ flutter:
   assets:
     - assets/animations/
     - assets/images/
+    - assets/images/Nike/
+    - assets/images/Adidas/
+    - assets/images/New Balance/
+    - assets/images/Converse/
+    - assets/images/PUMA/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
