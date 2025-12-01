@@ -18,10 +18,7 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  late AnimationController _fabAnimationController;
   late TabController _tabController;
-  late Animation<double> _fabAnimation;
-  bool _showFab = true;
 
   @override
   void initState() {
@@ -32,17 +29,6 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     _tabController.addListener(_onTabChanged);
 
     _scrollController.addListener(_onScroll);
-
-    _fabAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
-    );
-
-    _fabAnimationController.forward();
 
     // Load initial posts
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,7 +50,6 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
-    _fabAnimationController.dispose();
     super.dispose();
   }
 
@@ -76,21 +61,6 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
         context.read<PostProvider>().loadPosts();
       } else {
         context.read<PostProvider>().loadFollowingPosts();
-      }
-    }
-
-    // FAB animation logic
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.reverse) {
-      if (_showFab) {
-        setState(() => _showFab = false);
-        _fabAnimationController.reverse();
-      }
-    } else if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.forward) {
-      if (!_showFab) {
-        setState(() => _showFab = true);
-        _fabAnimationController.forward();
       }
     }
   }
@@ -191,34 +161,6 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
           children: [_buildAllPostsTab(), _buildFollowingPostsTab()],
         ),
       ),
-      floatingActionButton: ScaleTransition(
-        scale: _fabAnimation,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF00F5FF), Color(0xFF0080FF)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00F5FF).withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () {
-              // Navigate to create post
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-          ),
-        ),
-      ),
     );
   }
 
@@ -283,31 +225,28 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-      // actions: [
-      //   Container(
-      //     padding: const EdgeInsets.only(top: 20, right: 16),
-      //     child: Container(
-      //       decoration: BoxDecoration(
-      //         color: const Color(0xFF1A1A1A).withOpacity(0.8),
-      //         borderRadius: BorderRadius.circular(12),
-      //         border: Border.all(color: const Color(0xFF333333), width: 1),
-      //       ),
-      //       child: IconButton(
-      //         icon: const Icon(
-      //           Icons.logout_rounded,
-      //           color: Color(0xFF00F5FF),
-      //           size: 20,
-      //         ),
-      //         onPressed: () async {
-      //           await context.read<AuthProvider>().logout();
-      //           if (mounted) {
-      //             Navigator.pushReplacementNamed(context, '/login');
-      //           }
-      //         },
-      //       ),
-      //     ),
-      //   ),
-      // ],
+      actions: [
+        Container(
+          padding: const EdgeInsets.only(right: 16),
+          child: Container(
+            // decoration: BoxDecoration(
+            //   color: const Color(0xFF1A1A1A).withOpacity(0.8),
+            //   borderRadius: BorderRadius.circular(12),
+            //   border: Border.all(color: const Color(0xFF333333), width: 1),
+            // ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.search_rounded,
+                color: Color.fromARGB(255, 255, 255, 255),
+                size: 22,
+              ),
+              onPressed: () {
+                Navigator.pushNamed(context, '/search');
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -513,24 +452,16 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
-  late AnimationController _likeAnimationController;
   late AnimationController _cardAnimationController;
   late AnimationController _heartAnimationController;
-  late Animation<double> _likeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _heartScaleAnimation;
   late Animation<double> _heartOpacityAnimation;
-  bool _isLiked = false;
   bool _showHeartOverlay = false;
 
   @override
   void initState() {
     super.initState();
-
-    _likeAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
 
     _cardAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
@@ -540,13 +471,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
     _heartAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
-    );
-
-    _likeAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
-      CurvedAnimation(
-        parent: _likeAnimationController,
-        curve: Curves.elasticOut,
-      ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
@@ -580,7 +504,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _likeAnimationController.dispose();
     _cardAnimationController.dispose();
     _heartAnimationController.dispose();
     super.dispose();
@@ -652,7 +575,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           _showHeartOverlay = true;
-          _isLiked = true;
         });
       }
 
@@ -911,42 +833,60 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
 
   Widget _buildSimplifiedContent() {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, top: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Only show sneaker brand and name
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2A2A).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF00F5FF).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+          // Sneaker name box
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A2A).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF00F5FF).withOpacity(0.3),
+                  width: 1,
                 ),
-                children: [
-                  TextSpan(
-                    text: '${widget.post.brandName} ',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF00F5FF),
-                    ),
+              ),
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                  TextSpan(text: widget.post.sneakerName),
-                ],
+                  children: [
+                    TextSpan(
+                      text: '${widget.post.brandName} ',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF00F5FF),
+                      ),
+                    ),
+                    TextSpan(text: widget.post.sneakerName),
+                  ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 2),
+          // Likes box - fixed at absolute right corner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2A2A).withOpacity(0.35),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${widget.post.likeCount} ${widget.post.likeCount == 1 ? 'like' : 'likes'}',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -957,56 +897,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          ScaleTransition(
-            scale: _likeAnimation,
-            child: Container(
-              decoration: BoxDecoration(
-                color: _isLiked
-                    ? const Color(0xFFFF4757).withOpacity(0.2)
-                    : const Color(0xFF2A2A2A).withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _isLiked
-                      ? const Color(0xFFFF4757).withOpacity(0.5)
-                      : const Color(0xFF404040),
-                  width: 1,
-                ),
-              ),
-              child: IconButton(
-                icon: Icon(
-                  widget.post.isLikedBy(
-                        context.read<AuthProvider>().user?.id ?? '',
-                      )
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color:
-                      widget.post.isLikedBy(
-                        context.read<AuthProvider>().user?.id ?? '',
-                      )
-                      ? const Color(0xFFFF4757)
-                      : Colors.white60,
-                  size: 22,
-                ),
-                onPressed: _toggleLike,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2A2A).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '${widget.post.likeCount} ${widget.post.likeCount == 1 ? 'like' : 'likes'}',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
           const Spacer(),
           // View details button
           // Container(
@@ -1052,65 +942,6 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
         ],
       ),
     );
-  }
-
-  void _toggleLike() async {
-    final authProvider = context.read<AuthProvider>();
-    final currentUser = authProvider.user;
-
-    print('Toggle like - User logged in: ${authProvider.isLoggedIn}');
-    print('Toggle like - Current user: ${currentUser?.id}');
-    print('Toggle like - Post ID: ${widget.post.id}');
-
-    if (currentUser == null) {
-      print('No current user found, cannot like post');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please log in to like posts'),
-            backgroundColor: const Color(0xFF1A1A1A),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    // Animate like button
-    setState(() {
-      _isLiked = !_isLiked;
-    });
-
-    _likeAnimationController.forward().then((_) {
-      _likeAnimationController.reverse();
-    });
-
-    final success = await context.read<PostProvider>().toggleLike(
-      widget.post.id,
-    );
-
-    if (!success && context.mounted) {
-      setState(() {
-        _isLiked = !_isLiked; // Revert on failure
-      });
-
-      final error = context.read<PostProvider>().error;
-      if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: const Color(0xFFFF4757),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
   }
 
   void _showPostOptions(BuildContext context) {
@@ -1229,6 +1060,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   ) {
     return Container(
       height: 48.0,
+      margin: const EdgeInsets.only(top: 5), // Add spacing from appbar
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
         border: Border(

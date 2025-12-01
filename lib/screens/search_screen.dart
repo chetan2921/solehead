@@ -292,8 +292,8 @@ class _SearchScreenState extends State<SearchScreen>
           // Add spacing for the AppBar
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 162,
-            ), // Match AppBar toolbarHeight + padding
+              height: 120 + MediaQuery.of(context).padding.top,
+            ), // Match AppBar toolbarHeight + safe area
           ),
 
           SliverPersistentHeader(
@@ -345,6 +345,7 @@ class _SearchScreenState extends State<SearchScreen>
       toolbarHeight: 120,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      automaticallyImplyLeading: false, // Remove default back button
       flexibleSpace: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -362,21 +363,48 @@ class _SearchScreenState extends State<SearchScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Title with gradient - reduced size for better fit
-                    Flexible(
-                      child: ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF00F5FF), Color(0xFF0080FF)],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'Discover',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                    // Title with back button
+                    Row(
+                      children: [
+                        // Back button
+                        Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          // decoration: BoxDecoration(
+                          //   color: const Color(0xFF1A1A1A).withOpacity(0.8),
+                          //   borderRadius: BorderRadius.circular(12),
+                          //   border: Border.all(
+                          //     color: const Color(0xFF333333),
+                          //     width: 1,
+                          //   ),
+                          // ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(),
                           ),
                         ),
-                      ),
+                        // Title with gradient
+                        Flexible(
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Color(0xFF00F5FF), Color(0xFF0080FF)],
+                            ).createShader(bounds),
+                            child: const Text(
+                              'Discover',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     // Modern search bar with proper constraints
@@ -462,19 +490,25 @@ class _SearchScreenState extends State<SearchScreen>
         List<SneakerModel> sneakers = _isSearching
             ? sneakerProvider.searchResults
             : sneakerProvider.topSneakers;
+        final bool isLoading = _isSearching
+            ? sneakerProvider.isLoading
+            : sneakerProvider.isTopSneakersLoading;
+        final String? errorMessage = _isSearching
+            ? sneakerProvider.error
+            : sneakerProvider.topSneakersError;
 
-        if (sneakers.isEmpty && sneakerProvider.isLoading) {
+        if (sneakers.isEmpty && isLoading) {
           return _buildLoadingState(
             _isSearching ? 'Searching sneakers...' : 'Loading top sneakers...',
           );
         }
 
-        if (sneakers.isEmpty && sneakerProvider.error != null) {
+        if (sneakers.isEmpty && errorMessage != null) {
           return _buildErrorState(
-            sneakerProvider.error!,
+            errorMessage,
             () => _isSearching
                 ? sneakerProvider.searchSneakers(_searchController.text)
-                : sneakerProvider.loadTopSneakers(),
+                : sneakerProvider.loadTopSneakers(refresh: true),
           );
         }
 
@@ -487,7 +521,7 @@ class _SearchScreenState extends State<SearchScreen>
             icon: Icons.sports_baseball_outlined,
             showAction: !_isSearching,
             actionText: 'Explore Sneakers',
-            onAction: () => sneakerProvider.loadTopSneakers(),
+            onAction: () => sneakerProvider.loadTopSneakers(refresh: true),
           );
         }
 
@@ -496,7 +530,7 @@ class _SearchScreenState extends State<SearchScreen>
             if (_isSearching) {
               await sneakerProvider.searchSneakers(_searchController.text);
             } else {
-              await sneakerProvider.loadTopSneakers();
+              await sneakerProvider.loadTopSneakers(refresh: true);
             }
           },
           color: const Color(0xFF00F5FF),

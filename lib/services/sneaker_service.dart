@@ -11,7 +11,10 @@ class SneakerService {
     try {
       final response = await ApiService.get(
         ApiEndpoints.getAllSneakers,
-        queryParams: {'page': page.toString(), 'limit': limit.toString()},
+        queryParams: _withDetailParams({
+          'page': page.toString(),
+          'limit': limit.toString(),
+        }),
       );
 
       return (response['sneakers'] as List)
@@ -27,7 +30,7 @@ class SneakerService {
     try {
       final response = await ApiService.get(
         ApiEndpoints.getTopSneakers,
-        queryParams: {'limit': limit.toString()},
+        queryParams: _withDetailParams({'limit': limit.toString()}),
       );
 
       return (response['sneakers'] as List)
@@ -69,7 +72,10 @@ class SneakerService {
   // Search sneakers
   static Future<List<SneakerModel>> searchSneakers(String query) async {
     try {
-      final response = await ApiService.get(ApiEndpoints.searchSneakers(query));
+      final response = await ApiService.get(
+        ApiEndpoints.searchSneakers(query),
+        queryParams: _withDetailParams({}),
+      );
       return (response['sneakers'] as List)
           .map((sneaker) => SneakerModel.fromJson(sneaker))
           .toList();
@@ -83,6 +89,7 @@ class SneakerService {
     try {
       final response = await ApiService.get(
         ApiEndpoints.getSneakersByBrand(brand),
+        queryParams: _withDetailParams({}),
       );
       return (response['sneakers'] as List)
           .map((sneaker) => SneakerModel.fromJson(sneaker))
@@ -102,5 +109,9 @@ class SneakerService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  static Map<String, String> _withDetailParams(Map<String, String> baseParams) {
+    return {...baseParams, 'includeDetails': 'true', 'includeMetadata': 'true'};
   }
 }

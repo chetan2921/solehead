@@ -3,13 +3,17 @@ import '../models/sneaker_model.dart';
 import '../services/sneaker_service.dart';
 
 class SneakerProvider with ChangeNotifier {
+  static const int _pageSize = 10;
+  static const int _maxPageAttemptsPerLoad = 25;
   List<SneakerModel> _sneakers = [];
   List<SneakerModel> _topSneakers = [];
   List<SneakerModel> _searchResults = [];
   List<String> _popularBrands = [];
   SneakerModel? _selectedSneaker;
   bool _isLoading = false;
+  bool _isTopSneakersLoading = false;
   String? _error;
+  String? _topSneakersError;
   int _currentPage = 1;
   bool _hasMoreSneakers = true;
 
@@ -19,7 +23,9 @@ class SneakerProvider with ChangeNotifier {
   List<String> get popularBrands => _popularBrands;
   SneakerModel? get selectedSneaker => _selectedSneaker;
   bool get isLoading => _isLoading;
+  bool get isTopSneakersLoading => _isTopSneakersLoading;
   String? get error => _error;
+  String? get topSneakersError => _topSneakersError;
   bool get hasMoreSneakers => _hasMoreSneakers;
 
   Future<void> loadSneakers({bool refresh = false}) async {
@@ -35,22 +41,39 @@ class SneakerProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final newSneakers = await SneakerService.getAllSneakers(
-        page: _currentPage,
-        limit: 10,
-      );
+      final curatedBatch = <SneakerModel>[];
+      int attempts = 0;
 
-      if (newSneakers.length < 10) {
-        _hasMoreSneakers = false;
+      while (_hasMoreSneakers &&
+          curatedBatch.length < _pageSize &&
+          attempts < _maxPageAttemptsPerLoad) {
+        attempts++;
+
+        final pageSneakers = await SneakerService.getAllSneakers(
+          page: _currentPage,
+          limit: _pageSize,
+        );
+
+        if (pageSneakers.length < _pageSize) {
+          _hasMoreSneakers = false;
+        }
+
+        _currentPage++;
+
+        final filteredSneakers = _filterBackendSneakers(pageSneakers);
+        if (filteredSneakers.isEmpty) {
+          continue;
+        }
+
+        curatedBatch.addAll(filteredSneakers);
       }
 
       if (refresh) {
-        _sneakers = newSneakers;
+        _sneakers = curatedBatch;
       } else {
-        _sneakers.addAll(newSneakers);
+        _sneakers.addAll(curatedBatch);
       }
 
-      _currentPage++;
       notifyListeners();
     } catch (e) {
       _setError(_getErrorMessage(e));
@@ -59,17 +82,21 @@ class SneakerProvider with ChangeNotifier {
     }
   }
 
-  Future<void> loadTopSneakers() async {
-    _setLoading(true);
-    _clearError();
+  Future<void> loadTopSneakers({bool refresh = false}) async {
+    if (_isTopSneakersLoading) return;
+    if (!refresh && _topSneakers.isNotEmpty) return;
+
+    _setTopSneakersLoading(true);
+    _setTopSneakersError(null);
 
     try {
-      _topSneakers = await SneakerService.getTopSneakers(limit: 20);
+      final sneakers = await SneakerService.getTopSneakers(limit: 20);
+      _topSneakers = _filterBackendSneakers(sneakers);
       notifyListeners();
     } catch (e) {
-      _setError(_getErrorMessage(e));
+      _setTopSneakersError(_getErrorMessage(e));
     } finally {
-      _setLoading(false);
+      _setTopSneakersLoading(false);
     }
   }
 
@@ -84,7 +111,8 @@ class SneakerProvider with ChangeNotifier {
     _clearError();
 
     try {
-      _searchResults = await SneakerService.searchSneakers(query);
+      final sneakers = await SneakerService.searchSneakers(query);
+      _searchResults = _filterBackendSneakers(sneakers);
       notifyListeners();
     } catch (e) {
       _setError(_getErrorMessage(e));
@@ -139,7 +167,8 @@ class SneakerProvider with ChangeNotifier {
     _clearError();
 
     try {
-      _searchResults = await SneakerService.getSneakersByBrand(brand);
+      final sneakers = await SneakerService.getSneakersByBrand(brand);
+      _searchResults = _filterBackendSneakers(sneakers);
       notifyListeners();
     } catch (e) {
       _setError(_getErrorMessage(e));
@@ -205,11 +234,41 @@ class SneakerProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void _setTopSneakersLoading(bool loading) {
+    if (_isTopSneakersLoading == loading) return;
+    _isTopSneakersLoading = loading;
+    notifyListeners();
+  }
+
+  void _setTopSneakersError(String? error) {
+    if (_topSneakersError == error) return;
+    _topSneakersError = error;
+    notifyListeners();
+  }
+
+  void clearTopSneakersError() {
+    _setTopSneakersError(null);
+  }
+
   String _getErrorMessage(dynamic error) {
     return error.toString().replaceAll('Exception: ', '');
   }
 
   void clearError() {
     _clearError();
+    _setTopSneakersError(null);
+  }
+
+  List<SneakerModel> _filterBackendSneakers(List<SneakerModel> sneakers) {
+    return sneakers.where(_isBackendSneaker).toList();
+  }
+
+  bool _isBackendSneaker(SneakerModel sneaker) {
+    final hasCatalogSource =
+        (sneaker.sourceFile?.isNotEmpty ?? false) ||
+        (sneaker.metadataOriginalRowHash?.isNotEmpty ?? false) ||
+        (sneaker.metadata != null && sneaker.metadata!.isNotEmpty);
+    final hasImage = sneaker.photoUrl.isNotEmpty;
+    return hasCatalogSource && hasImage;
   }
 }

@@ -146,7 +146,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
     final isCurrentUser = currentUser?.id == user.id;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 1),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -159,7 +159,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 1),
         leading: GestureDetector(
           onTap: () => _navigateToUserProfile(user),
           child: Hero(
@@ -197,25 +197,25 @@ class _FollowersScreenState extends State<FollowersScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (isCurrentUser)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'You',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
+              // if (isCurrentUser)
+              //   Container(
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: 8,
+              //       vertical: 2,
+              //     ),
+              //     decoration: BoxDecoration(
+              //       color: AppColors.primary.withOpacity(0.1),
+              //       borderRadius: BorderRadius.circular(8),
+              //     ),
+              //     child: const Text(
+              //       'You',
+              //       style: TextStyle(
+              //         fontSize: 10,
+              //         fontWeight: FontWeight.w600,
+              //         color: AppColors.primary,
+              //       ),
+              //     ),
+              //   ),
             ],
           ),
         ),

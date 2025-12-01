@@ -28,6 +28,31 @@ class _CreatePostScreenState extends State<CreatePostScreen>
   List<File> _additionalImages = [];
   final ImagePicker _picker = ImagePicker();
 
+  // Autocomplete state
+  List<String> _brandSuggestions = [];
+  List<Map<String, dynamic>> _sneakerSuggestions = [];
+  bool _showBrandDropdown = false;
+  bool _showSneakerDropdown = false;
+  final FocusNode _brandFocusNode = FocusNode();
+  final FocusNode _sneakerFocusNode = FocusNode();
+  String? _selectedSneakerId;
+
+  // Popular brands list (can be fetched from backend later)
+  final List<String> _popularBrands = [
+    'Nike',
+    'Adidas',
+    'New Balance',
+    'Converse',
+    'PUMA',
+    'Reebok',
+    'Vans',
+    'Jordan',
+    'Yeezy',
+    'Under Armour',
+    'Asics',
+    'Saucony',
+  ];
+
   late AnimationController _slideAnimationController;
   late AnimationController _scaleAnimationController;
   late AnimationController _fabAnimationController;
@@ -99,6 +124,8 @@ class _CreatePostScreenState extends State<CreatePostScreen>
     _priceController.dispose();
     _yearController.dispose();
     _releaseDateController.dispose();
+    _brandFocusNode.dispose();
+    _sneakerFocusNode.dispose();
     super.dispose();
   }
 
@@ -116,6 +143,77 @@ class _CreatePostScreenState extends State<CreatePostScreen>
     setState(() {
       _additionalImages = images.map((image) => File(image.path)).toList();
     });
+  }
+
+  void _onBrandChanged(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _brandSuggestions = [];
+        _showBrandDropdown = false;
+      } else {
+        _brandSuggestions = _popularBrands
+            .where((brand) => brand.toLowerCase().contains(value.toLowerCase()))
+            .toList();
+        _showBrandDropdown = _brandSuggestions.isNotEmpty;
+      }
+    });
+  }
+
+  void _onSneakerChanged(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _sneakerSuggestions = [];
+        _showSneakerDropdown = false;
+      } else {
+        // TODO: Fetch sneaker suggestions from backend
+        // For now, show sample suggestions
+        _sneakerSuggestions = _getSampleSneakerSuggestions(value);
+        _showSneakerDropdown = _sneakerSuggestions.isNotEmpty;
+      }
+    });
+  }
+
+  List<Map<String, dynamic>> _getSampleSneakerSuggestions(String query) {
+    // Sample data - replace with backend API call
+    final sampleSneakers = [
+      {'id': '1', 'name': 'Air Jordan 1 High', 'brand': 'Nike'},
+      {'id': '2', 'name': 'Air Max 90', 'brand': 'Nike'},
+      {'id': '3', 'name': 'Dunk Low', 'brand': 'Nike'},
+      {'id': '4', 'name': 'Air Force 1', 'brand': 'Nike'},
+      {'id': '5', 'name': 'Yeezy Boost 350', 'brand': 'Adidas'},
+      {'id': '6', 'name': 'Superstar', 'brand': 'Adidas'},
+      {'id': '7', 'name': 'Stan Smith', 'brand': 'Adidas'},
+      {'id': '8', 'name': 'Ultraboost', 'brand': 'Adidas'},
+      {'id': '9', 'name': '550', 'brand': 'New Balance'},
+      {'id': '10', 'name': '990v5', 'brand': 'New Balance'},
+    ];
+
+    return sampleSneakers
+        .where(
+          (sneaker) => sneaker['name'].toString().toLowerCase().contains(
+            query.toLowerCase(),
+          ),
+        )
+        .toList();
+  }
+
+  void _selectBrand(String brand) {
+    setState(() {
+      _brandController.text = brand;
+      _showBrandDropdown = false;
+      _brandSuggestions = [];
+    });
+    _brandFocusNode.unfocus();
+  }
+
+  void _selectSneaker(Map<String, dynamic> sneaker) {
+    setState(() {
+      _sneakerController.text = sneaker['name'];
+      _selectedSneakerId = sneaker['id'];
+      _showSneakerDropdown = false;
+      _sneakerSuggestions = [];
+    });
+    _sneakerFocusNode.unfocus();
   }
 
   Future<void> _submitPost() async {
@@ -899,10 +997,15 @@ class _CreatePostScreenState extends State<CreatePostScreen>
               ],
             ),
             const SizedBox(height: 20),
-            _buildGlassTextField(
+            _buildAutocompleteField(
               controller: _brandController,
+              focusNode: _brandFocusNode,
               label: 'Brand Name',
               icon: Icons.branding_watermark_rounded,
+              suggestions: _brandSuggestions,
+              showDropdown: _showBrandDropdown,
+              onChanged: _onBrandChanged,
+              onSuggestionSelected: _selectBrand,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter the brand name';
@@ -911,10 +1014,15 @@ class _CreatePostScreenState extends State<CreatePostScreen>
               },
             ),
             const SizedBox(height: 16),
-            _buildGlassTextField(
+            _buildSneakerAutocompleteField(
               controller: _sneakerController,
+              focusNode: _sneakerFocusNode,
               label: 'Sneaker Name',
               icon: Icons.sports_baseball_rounded,
+              suggestions: _sneakerSuggestions,
+              showDropdown: _showSneakerDropdown,
+              onChanged: _onSneakerChanged,
+              onSuggestionSelected: _selectSneaker,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter the sneaker name';
@@ -1021,6 +1129,343 @@ class _CreatePostScreenState extends State<CreatePostScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAutocompleteField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required IconData icon,
+    required List<String> suggestions,
+    required bool showDropdown,
+    required Function(String) onChanged,
+    required Function(String) onSuggestionSelected,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2A2A).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF404040).withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+          child: TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            validator: validator,
+            onChanged: onChanged,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              labelText: label,
+              labelStyle: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00F5FF).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: const Color(0xFF00F5FF), size: 20),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFF00F5FF),
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF4757),
+                  width: 2,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF4757),
+                  width: 2,
+                ),
+              ),
+              errorStyle: const TextStyle(
+                color: Color(0xFFFF4757),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ),
+        if (showDropdown && suggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00F5FF).withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: suggestions.length,
+              itemBuilder: (context, index) {
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onSuggestionSelected(suggestions[index]),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00F5FF).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: const Color(0xFF00F5FF),
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              suggestions[index],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: Colors.white54,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSneakerAutocompleteField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required IconData icon,
+    required List<Map<String, dynamic>> suggestions,
+    required bool showDropdown,
+    required Function(String) onChanged,
+    required Function(Map<String, dynamic>) onSuggestionSelected,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2A2A).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF404040).withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+          child: TextFormField(
+            controller: controller,
+            focusNode: focusNode,
+            validator: validator,
+            onChanged: onChanged,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              labelText: label,
+              labelStyle: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00F5FF).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: const Color(0xFF00F5FF), size: 20),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFF00F5FF),
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF4757),
+                  width: 2,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFF4757),
+                  width: 2,
+                ),
+              ),
+              errorStyle: const TextStyle(
+                color: Color(0xFFFF4757),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ),
+        if (showDropdown && suggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF00F5FF).withOpacity(0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: suggestions.length,
+              itemBuilder: (context, index) {
+                final sneaker = suggestions[index];
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onSuggestionSelected(sneaker),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00F5FF).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: const Color(0xFF00F5FF),
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  sneaker['name'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  sneaker['brand'],
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: Colors.white54,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 

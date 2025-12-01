@@ -6,7 +6,6 @@ import '../utils/constants.dart';
 import 'feed_screen.dart';
 import 'profile_screen.dart';
 import 'create_post_screen.dart';
-import 'search_screen.dart';
 import 'explore_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -74,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
         children: const [
           FeedScreen(),
           ExploreScreen(),
-          SearchScreen(),
           CreatePostScreen(),
           ProfileScreen(),
         ],
@@ -114,22 +112,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 1,
               ),
               _buildModernNavItem(
-                Icons.search_outlined,
-                Icons.search,
-                'Search',
-                2,
-              ),
-              _buildModernNavItem(
                 Icons.add_box_outlined,
                 Icons.add_box,
                 'Create',
-                3,
+                2,
               ),
               _buildModernNavItem(
                 Icons.person_outlined,
                 Icons.person,
                 'Profile',
-                4,
+                3,
               ),
             ],
           ),
@@ -244,11 +236,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: Text('Explore'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.search_outlined),
-                selectedIcon: Icon(Icons.search),
-                label: Text('Search'),
-              ),
-              NavigationRailDestination(
                 icon: Icon(Icons.add_box_outlined),
                 selectedIcon: Icon(Icons.add_box),
                 label: Text('Create'),
@@ -269,7 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
               children: const [
                 FeedScreen(),
                 ExploreScreen(),
-                SearchScreen(),
                 CreatePostScreen(),
                 ProfileScreen(),
               ],

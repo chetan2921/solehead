@@ -168,7 +168,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             slivers: [
               // Enhanced App Bar with back button
               SliverAppBar(
-                expandedHeight: 320, // Increased from 280
+                expandedHeight: 400,
                 pinned: true,
                 backgroundColor: AppColors.primary,
                 elevation: 0,
@@ -214,25 +214,25 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 40),
+                            const SizedBox(height: 25),
                             // Profile Photo with border
                             Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.3),
-                                  width: 4,
+                                  width: 3,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 20,
-                                    spreadRadius: 5,
+                                    blurRadius: 15,
+                                    spreadRadius: 3,
                                   ),
                                 ],
                               ),
                               child: CircleAvatar(
-                                radius: 50,
+                                radius: 48,
                                 backgroundColor: Colors.white,
                                 backgroundImage: user.profilePhoto.isNotEmpty
                                     ? NetworkImage(user.profilePhoto)
@@ -251,13 +251,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                     : null,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
 
                             // Username
                             Text(
                               user.username,
                               style: const TextStyle(
-                                fontSize: 28,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 shadows: [
@@ -270,21 +270,24 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                             Text(
                               user.email,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13,
                                 color: Colors.white.withOpacity(0.9),
                               ),
                             ),
 
                             // Follow Button
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             _buildFollowButton(),
 
                             // Stats Row
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 12),
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              margin: const EdgeInsets.symmetric(
                                 horizontal: 20,
-                                vertical: 16,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.15),
@@ -300,14 +303,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
                                         children: [
-                                          Expanded(
-                                            child: _buildStatColumn(
-                                              'Posts',
-                                              user.postCount?.toString() ?? '0',
-                                              Icons.photo_camera_outlined,
-                                            ),
-                                          ),
-                                          _buildDivider(),
                                           Expanded(
                                             child: _buildStatColumn(
                                               'Sneakers',
@@ -352,13 +347,29 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 delegate: _SliverTabBarDelegate(
                   TabBar(
                     controller: _tabController,
-                    labelColor: AppColors.primary,
+                    labelColor: const Color.fromARGB(255, 255, 255, 255),
                     unselectedLabelColor: Colors.grey,
-                    indicatorColor: AppColors.primary,
-                    indicatorWeight: 3,
+                    indicatorColor: const Color.fromARGB(255, 255, 255, 255),
+                    indicatorWeight: 2,
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                     tabs: const [
-                      Tab(icon: Icon(Icons.grid_on), text: 'Posts'),
-                      Tab(icon: Icon(Icons.info_outline), text: 'About'),
+                      Tab(
+                        icon: Icon(Icons.grid_on, size: 20),
+                        text: 'Posts',
+                        height: 48,
+                      ),
+                      Tab(
+                        icon: Icon(Icons.info_outline, size: 20),
+                        text: 'About',
+                        height: 48,
+                      ),
                     ],
                   ),
                 ),
@@ -386,7 +397,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 30),
+      margin: const EdgeInsets.symmetric(horizontal: 35),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
@@ -404,8 +415,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           ),
           child: _isFollowLoading
               ? const SizedBox(
-                  height: 18,
-                  width: 18,
+                  height: 16,
+                  width: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -453,7 +464,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 16),
+            Icon(icon, color: Colors.white.withOpacity(0.9), size: 16),
             const SizedBox(height: 4),
             Text(
               value,
@@ -469,7 +480,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               label,
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -514,15 +526,30 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           );
         }
 
-        return ResponsivePadding(
-          child: ResponsiveColumns(
-            mobileColumns: 2,
-            tabletColumns: 3,
-            desktopColumns: 4,
-            children: postProvider.userPosts
-                .map((post) => PostGridItem(post: post))
-                .toList(),
-          ),
+        return ResponsiveBuilder(
+          builder: (context, isMobile, isTablet, isDesktop) {
+            int crossAxisCount = 2;
+            if (isTablet) crossAxisCount = 3;
+            if (isDesktop) crossAxisCount = 4;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 75.0),
+              child: GridView.builder(
+                padding: EdgeInsets.zero,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1,
+                ),
+                itemCount: postProvider.userPosts.length,
+                itemBuilder: (context, index) {
+                  final post = postProvider.userPosts[index];
+                  return _buildPostCard(post);
+                },
+              ),
+            );
+          },
         );
       },
     );
@@ -864,102 +891,127 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       },
     );
   }
-}
 
-class PostGridItem extends StatelessWidget {
-  final PostModel post;
-
-  const PostGridItem({super.key, required this.post});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildPostCard(PostModel post) {
     return GestureDetector(
-      onTap: () => _viewPost(context),
-      child: AspectRatio(
-        aspectRatio: 1.0,
-        child: Card(
-          clipBehavior: Clip.antiAlias,
-          elevation: 2,
+      onTap: () {
+        Navigator.pushNamed(context, '/post-detail', arguments: post);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              widgets.CachedImageWidget(
-                imageUrl: post.mainImage,
+              Image.network(
+                post.mainImage,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: Colors.grey,
+                      size: 32,
+                    ),
+                  );
+                },
               ),
-
-              // Gradient overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+              if (post.additionalImages.isNotEmpty)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.photo_library,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.additionalImages.length + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              // Post info
               Positioned(
                 bottom: 8,
                 left: 8,
                 right: 8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.description.length > 30
-                          ? '${post.description.substring(0, 30)}...'
-                          : post.description,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              post.likeCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.comment,
-                              color: Colors.white,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '0', // TODO: Add comment count to PostModel
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.7),
                       ],
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.favorite,
+                        color:
+                            context.read<AuthProvider>().user != null &&
+                                post.isLikedBy(
+                                  context.read<AuthProvider>().user!.id,
+                                )
+                            ? Colors.red
+                            : Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${post.likeCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${post.sneakerName}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -967,11 +1019,6 @@ class PostGridItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _viewPost(BuildContext context) {
-    // Navigate to post details screen
-    Navigator.pushNamed(context, '/post', arguments: post.id);
   }
 }
 

@@ -10,11 +10,13 @@ import 'providers/sneaker_provider.dart';
 import 'screens/intro_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/search_screen.dart';
 import 'screens/post_detail_screen.dart';
 import 'screens/user_profile_screen.dart';
 import 'screens/followers_screen.dart';
 import 'screens/following_screen.dart';
 import 'screens/sneaker_detail_screen.dart';
+import 'models/sneaker_model.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -57,6 +59,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/home': (context) => const HomeScreen(),
           '/intro': (context) => const IntroScreen(),
+          '/search': (context) => const SearchScreen(),
         },
         onGenerateRoute: (settings) {
           switch (settings.name) {
@@ -66,10 +69,9 @@ class MyApp extends StatelessWidget {
                 builder: (_) => PostDetailScreen(postId: postId),
               );
             case '/sneaker-detail':
-              final args = settings.arguments as Map<String, dynamic>;
+              final sneaker = settings.arguments as SneakerModel;
               return MaterialPageRoute(
-                builder: (_) => const SneakerDetailScreen(),
-                settings: RouteSettings(arguments: args),
+                builder: (_) => SneakerDetailScreen(sneaker: sneaker),
               );
             case '/user-profile':
               final args = settings.arguments as Map<String, dynamic>;

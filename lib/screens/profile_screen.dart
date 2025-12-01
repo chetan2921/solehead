@@ -482,6 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 75.0,
               ), // Adjusted for 65px nav
               child: GridView.builder(
+                padding: EdgeInsets.zero, // Remove default GridView padding
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: 8,
